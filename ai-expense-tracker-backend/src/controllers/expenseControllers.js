@@ -1,4 +1,4 @@
-const Expense = require("../models/Expense");
+const Expense = require("../models/expense");
 
 // GET ALL EXPENSES WITH PAGINATION, SEARCH, AND FILTERS
 const getExpenses = async (req, res) => {
