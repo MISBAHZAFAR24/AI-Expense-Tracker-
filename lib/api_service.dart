@@ -20,9 +20,18 @@ class ApiService {
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"email": email, "password": password}),
       ).timeout(const Duration(seconds: 10));
+
+      debugPrint("Login Status: ${response.statusCode}");
+      debugPrint("Login Response: ${response.body}");
+
+      if (response.body.startsWith("<!DOCTYPE html>")) {
+        return {"message": "Server Error: Vercel returned HTML instead of JSON. Check your API routes."};
+      }
+
       return jsonDecode(response.body);
     } catch (e) {
-      return {"message": "Connection error: Check if backend is running"};
+      debugPrint("Login Error: $e");
+      return {"message": "Connection error: $e"};
     }
   }
 
