@@ -2,7 +2,7 @@ const express = require("express");
 
 const {
     getDashboard
-} = require("../controllers/dashboardControllers");
+} = require("../controllers/dashboardcontrollers");
 
 const protect = require("../middleware/authMiddleware");
 

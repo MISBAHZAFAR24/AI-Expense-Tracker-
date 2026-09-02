@@ -6,7 +6,7 @@ const {
     getIncomeById,
     updateIncome,
     deleteIncome
-} = require("../controllers/incomeControllers");
+} = require("../controllers/incomecontrollers");
 
 const protect = require("../middleware/authMiddleware");
 
