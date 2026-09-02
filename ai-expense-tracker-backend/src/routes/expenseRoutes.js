@@ -6,7 +6,7 @@ const {
     getExpenseById,
     updateExpense,
     deleteExpense
-} = require("../controllers/expenseControllers.js");
+} = require("../controllers/expenseControllers");
 
 const protect = require("../middleware/authMiddleware");
 
