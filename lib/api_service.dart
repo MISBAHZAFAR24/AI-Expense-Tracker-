@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-
+  // Increased timeout for Render free tier cold starts
+  static const Duration _timeoutDuration = Duration(seconds: 45);
   static const String baseUrl = "https://ai-expense-tracker-d8n9.onrender.com/api";
 
   // Helper function to get Token
@@ -16,32 +17,36 @@ class ApiService {
   // Helper function to handle common response logic
   static dynamic _processResponse(http.Response response, String functionName) {
     debugPrint("$functionName Status: ${response.statusCode}");
-    debugPrint("$functionName Response: ${response.body}");
-
+    
     if (response.body.startsWith("<!DOCTYPE html>")) {
-      throw Exception("Server Error: Vercel returned HTML instead of JSON. Check backend logs.");
+      throw Exception("Server Error: Vercel/Render returned HTML. Check backend logs.");
     }
 
-    final data = jsonDecode(response.body);
-    if (response.statusCode >= 400) {
-      throw Exception(data['message'] ?? "Request failed with status: ${response.statusCode}");
+    try {
+      final data = jsonDecode(response.body);
+      if (response.statusCode >= 400) {
+        throw Exception(data['message'] ?? "Request failed: ${response.statusCode}");
+      }
+      return data;
+    } catch (e) {
+      throw Exception("Failed to parse server response: ${response.body}");
     }
-    return data;
   }
 
   // AUTH: Login
   static Future<Map<String, dynamic>> login(String email, String password) async {
     try {
+      debugPrint("Attempting Login at: $baseUrl/auth/login");
       final response = await http.post(
         Uri.parse("$baseUrl/auth/login"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"email": email, "password": password}),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
 
       return _processResponse(response, "Login");
     } catch (e) {
       debugPrint("Login Error: $e");
-      return {"message": e.toString()};
+      return {"message": "Server taking too long to respond. Please try again in 30 seconds."};
     }
   }
 
@@ -52,12 +57,12 @@ class ApiService {
         Uri.parse("$baseUrl/auth/register"),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"name": name, "email": email, "password": password}),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
 
       return _processResponse(response, "Register");
     } catch (e) {
       debugPrint("Register Error: $e");
-      return {"message": e.toString()};
+      return {"message": "Connection error: $e"};
     }
   }
 
@@ -68,7 +73,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse("$baseUrl/expenses"),
         headers: {"Authorization": "Bearer $token"},
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
 
       final data = _processResponse(response, "GetExpenses");
       return data['expenses'] ?? [];
@@ -85,7 +90,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse("$baseUrl/auth/profile"),
         headers: {"Authorization": "Bearer $token"},
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
 
       return _processResponse(response, "GetProfile");
     } catch (e) {
@@ -105,7 +110,7 @@ class ApiService {
           "Authorization": "Bearer $token"
         },
         body: jsonEncode(expenseData),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
 
       return _processResponse(response, "AddExpense");
     } catch (e) {
@@ -121,7 +126,7 @@ class ApiService {
       final response = await http.delete(
         Uri.parse("$baseUrl/expenses/$id"),
         headers: {"Authorization": "Bearer $token"},
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
 
       return _processResponse(response, "DeleteExpense");
     } catch (e) {
@@ -137,7 +142,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse("$baseUrl/income"),
         headers: {"Authorization": "Bearer $token"},
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
 
       final data = _processResponse(response, "GetIncome");
       return data['incomes'] ?? [];
@@ -158,7 +163,7 @@ class ApiService {
           "Authorization": "Bearer $token"
         },
         body: jsonEncode(incomeData),
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
 
       return _processResponse(response, "AddIncome");
     } catch (e) {
@@ -174,7 +179,7 @@ class ApiService {
       final response = await http.delete(
         Uri.parse("$baseUrl/income/$id"),
         headers: {"Authorization": "Bearer $token"},
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
 
       return _processResponse(response, "DeleteIncome");
     } catch (e) {
@@ -190,7 +195,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse("$baseUrl/dashboard"),
         headers: {"Authorization": "Bearer $token"},
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
       
       return _processResponse(response, "GetDashboard");
     } catch (e) {
@@ -199,7 +204,7 @@ class ApiService {
     }
   }
 
-  // AI ADVISOR (Backend uses POST /advice)
+  // AI ADVISOR
   static Future<Map<String, dynamic>> getAIAdvice({String? question}) async {
     try {
       final token = await getToken();
@@ -210,7 +215,7 @@ class ApiService {
           "Authorization": "Bearer $token"
         },
         body: jsonEncode({"question": question}),
-      ).timeout(const Duration(seconds: 15));
+      ).timeout(const Duration(seconds: 60)); // AI takes longer
 
       return _processResponse(response, "GetAIAdvice");
     } catch (e) {
@@ -219,14 +224,14 @@ class ApiService {
     }
   }
 
-  // REPORTS (Backend uses GET /api/reports?timeframe=...)
+  // REPORTS
   static Future<Map<String, dynamic>> getReports(String timeframe) async {
     try {
       final token = await getToken();
       final response = await http.get(
         Uri.parse("$baseUrl/reports?timeframe=$timeframe"),
         headers: {"Authorization": "Bearer $token"},
-      ).timeout(const Duration(seconds: 10));
+      ).timeout(_timeoutDuration);
 
       return _processResponse(response, "GetReports");
     } catch (e) {
