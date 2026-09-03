@@ -20,7 +20,7 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 
-// Logging Middleware (For debugging Vercel issues)
+// Logging Middleware
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
     next();
@@ -30,6 +30,7 @@ app.use((req, res, next) => {
 app.get("/", (req, res) => {
     res.json({
         message: "AI Expense Tracker Backend is running successfully!",
+        platform: "Render",
         status: "Online",
         timestamp: new Date().toISOString(),
         mongoStatus: require("mongoose").connection.readyState === 1 ? "Connected" : "Disconnected"
@@ -53,11 +54,9 @@ app.use((err, req, res, next) => {
     });
 });
 
-// For local development
-if (process.env.NODE_ENV !== "production") {
-    app.listen(PORT, () => {
-        console.log(`Server running locally on port ${PORT}`);
-    });
-}
+// Start Server (Required for Render)
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
 
 module.exports = app;

@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
 
   static const String baseUrl =
-      "https://ai-expense-tracker-i8t1.vercel.app/api/auth/login";
+      "https://localhost:5000/api";
 
   // LOGIN API
   static Future<Map<String, dynamic>> login(
