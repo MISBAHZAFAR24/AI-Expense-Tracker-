@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
 
-  static const String baseUrl = "http://10.0.2.2:5000/api";
+  static const String baseUrl = "https://ai-expense-tracker-d8n9.onrender.com/api";
 
   // Helper function to get Token
   static Future<String?> getToken() async {

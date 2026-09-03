@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
 
   static const String baseUrl =
-      "https://localhost:5000/api";
+      "https://ai-expense-tracker-d8n9.onrender.com/api";
 
   // LOGIN API
   static Future<Map<String, dynamic>> login(
