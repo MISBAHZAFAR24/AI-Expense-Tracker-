@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Use 10.0.2.2 for Android Emulator to connect to localhost
+
   static const String baseUrl = "http://10.0.2.2:5000/api";
 
   // Helper function to get Token
