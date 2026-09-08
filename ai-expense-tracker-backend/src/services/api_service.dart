@@ -4,8 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const Duration _timeoutDuration = Duration(seconds: 45);
-  static const String baseUrl = "http://10.0.2.2:5000/api";
+  static const Duration _timeoutDuration = Duration(seconds: 30);
+  static const String baseUrl = "https://ai-expense-tracker-ij23.onrender.com/api";
   // LOGIN API
   static Future<Map<String, dynamic>> login(
       String email,
