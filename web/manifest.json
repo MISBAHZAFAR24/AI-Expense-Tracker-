@@ -1,6 +1,6 @@
 {
-    "name": "ai_expense_tracker",
-    "short_name": "ai_expense_tracker",
+    "name": "FinWise AI",
+    "short_name": "FinWise AI",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
