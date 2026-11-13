@@ -189,7 +189,6 @@ class _DashboardViewState extends State<DashboardView> {
     final dashboardProvider = Provider.of<DashboardProvider>(context);
     final data = dashboardProvider.dashboardData;
     final isLoading = dashboardProvider.isLoading;
-
     final totalBalance = (data?['balance'] ?? 0).toDouble();
     final totalIncome = (data?['totalIncome'] ?? 0).toDouble();
     final totalExpense = (data?['totalExpense'] ?? 0).toDouble();
@@ -206,7 +205,7 @@ class _DashboardViewState extends State<DashboardView> {
             Icon(Icons.account_balance_wallet,color:Colors.white),
             const SizedBox(width: 8),
             Text(
-              "AI Expense Tracker",
+              "FinWise AI",
               style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,

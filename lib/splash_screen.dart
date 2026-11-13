@@ -48,7 +48,7 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 24),
             const Text(
-              "AI Expense Tracker",
+              "FinWise AI",
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
