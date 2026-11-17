@@ -45,10 +45,42 @@ const getAIAdvice = async (req, res) => {
             }
         });
 
+        // Calculate Financial Health Score & Risk Level
+        let healthScore = 100;
+        let riskLevel = "EXCELLENT";
+        let topWarning = "🎉 Outstanding financial balance!";
+
+        if (totalIncome > 0) {
+            const expenseRatio = totalExpense / totalIncome;
+            if (expenseRatio > 1.0) {
+                healthScore = 25;
+                riskLevel = "CRITICAL";
+                topWarning = "⚠️ Alert: Expenses exceed total income!";
+            } else if (expenseRatio > 0.8) {
+                healthScore = 50;
+                riskLevel = "HIGH RISK";
+                topWarning = "⚠️ Caution: Over 80% of income spent!";
+            } else if (expenseRatio > 0.5) {
+                healthScore = 75;
+                riskLevel = "MODERATE";
+                topWarning = "💡 Tip: Try saving at least 40% of earnings.";
+            } else {
+                healthScore = 95;
+                riskLevel = "EXCELLENT";
+                topWarning = "🎉 Excellent savings ratio!";
+            }
+        } else if (totalExpense > 0) {
+            healthScore = 35;
+            riskLevel = "HIGH RISK";
+            topWarning = "⚠️ No income logged yet. Please add income.";
+        }
+
         const financialData = {
             totalIncome,
             totalExpense,
             balance,
+            healthScore,
+            riskLevel,
             categoryExpenses,
             monthlyExpenses: expenses.map((ex) => ({
                 amount: ex.amount,
@@ -65,6 +97,9 @@ const getAIAdvice = async (req, res) => {
                 totalIncome,
                 totalExpense,
                 balance,
+                healthScore,
+                riskLevel,
+                topWarning,
                 advice
             }
         });

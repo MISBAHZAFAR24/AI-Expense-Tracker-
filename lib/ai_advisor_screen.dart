@@ -152,6 +152,7 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
       body: Column(
         children: [
           _buildSummaryCard(),
+          _buildHealthScoreCard(),
           _buildQuickPromptsBar(),
           Expanded(
             child: _isInitialLoading
@@ -213,6 +214,73 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
         Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
         Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
       ],
+    );
+  }
+
+  Widget _buildHealthScoreCard() {
+    final healthScore = (_aiData?['healthScore'] ?? 100) as int;
+    final riskLevel = (_aiData?['riskLevel'] ?? "EXCELLENT").toString();
+    final warning = (_aiData?['topWarning'] ?? "").toString();
+
+    Color scoreColor = Colors.green;
+    if (healthScore < 40) {
+      scoreColor = Colors.red;
+    } else if (healthScore < 70) {
+      scoreColor = Colors.orange;
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: scoreColor.withValues(alpha: 0.3)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: scoreColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.shield_outlined, size: 14, color: scoreColor),
+                    const SizedBox(width: 4),
+                    Text(
+                      "AI Health Score: $healthScore/100 ($riskLevel)",
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: scoreColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (warning.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              warning,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
