@@ -12,22 +12,25 @@ const getAIAdvice = async (req, res) => {
             });
         }
 
-        const userId = new mongoose.Types.ObjectId(req.user.userId);
+        const userIdStr = String(req.user.userId);
+        const userIdObj = mongoose.Types.ObjectId.isValid(userIdStr)
+            ? new mongoose.Types.ObjectId(userIdStr)
+            : userIdStr;
         const { question } = req.body;
 
-        // GET USER DATA
+        // GET USER DATA - Querying both ObjectId and String formats for 100% database match
         const [expenses, incomes] = await Promise.all([
-            Expense.find({ user: userId }),
-            Income.find({ user: userId })
+            Expense.find({ user: { $in: [userIdStr, userIdObj] } }),
+            Income.find({ user: { $in: [userIdStr, userIdObj] } })
         ]);
 
         const totalExpense = expenses.reduce(
-            (total, ex) => total + (ex.amount || 0),
+            (total, ex) => total + (Number(ex.amount) || 0),
             0
         );
 
         const totalIncome = incomes.reduce(
-            (total, inc) => total + (inc.amount || 0),
+            (total, inc) => total + (Number(inc.amount) || 0),
             0
         );
 
@@ -36,8 +39,10 @@ const getAIAdvice = async (req, res) => {
         const categoryExpenses = {};
 
         expenses.forEach((ex) => {
-            categoryExpenses[ex.category] =
-                (categoryExpenses[ex.category] || 0) + ex.amount;
+            if (ex.category) {
+                categoryExpenses[ex.category] =
+                    (categoryExpenses[ex.category] || 0) + (Number(ex.amount) || 0);
+            }
         });
 
         const financialData = {
