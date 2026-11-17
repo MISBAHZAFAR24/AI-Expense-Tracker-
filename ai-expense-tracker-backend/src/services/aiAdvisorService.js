@@ -2,9 +2,8 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Valid Google Gemini models with fallback fallback chain
+// Official stable Google Gemini Flash models
 const MODEL_CANDIDATES = [
-    "gemini-3.6-flash",
     "gemini-1.5-flash",
     "gemini-2.0-flash",
     "gemini-1.5-pro"
@@ -20,6 +19,7 @@ const generateWithRetry = async (prompt) => {
             const result = await model.generateContent(prompt);
             const text = result.response.text();
             if (text && text.trim().length > 0) {
+                console.log(`AI Success with model: ${modelName}`);
                 return text;
             }
         } catch (error) {

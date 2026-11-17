@@ -73,9 +73,28 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
             _messages.add(ChatMessage(text: initialAdvice, isUser: false));
           });
         }
+      } else {
+        if (mounted) {
+          setState(() {
+            _messages.clear();
+            _messages.add(ChatMessage(
+              text: "Hello! I am your FinWise AI Assistant. Ask me any question about your expenses, savings, or budget!",
+              isUser: false,
+            ));
+          });
+        }
       }
     } catch (e) {
       debugPrint("AI Advisor Error: $e");
+      if (mounted) {
+        setState(() {
+          _messages.clear();
+          _messages.add(ChatMessage(
+            text: "Hello! Ask me any question about your budget, expenses, or savings tips!",
+            isUser: false,
+          ));
+        });
+      }
     } finally {
       if (mounted) {
         setState(() => _isInitialLoading = false);
