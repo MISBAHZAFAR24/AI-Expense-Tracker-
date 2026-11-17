@@ -19,18 +19,24 @@ class ApiService {
     debugPrint("$functionName Status: ${response.statusCode}");
     
     if (response.body.startsWith("<!DOCTYPE html>")) {
-      throw Exception("Server Error: Vercel/Render returned HTML. Check backend logs.");
+      throw Exception("Server Error: Render returned HTML (${response.statusCode}). Check backend logs.");
     }
 
+    dynamic data;
     try {
-      final data = jsonDecode(response.body);
-      if (response.statusCode >= 400) {
-        throw Exception(data['message'] ?? "Request failed: ${response.statusCode}");
-      }
-      return data;
+      data = jsonDecode(response.body);
     } catch (e) {
       throw Exception("Failed to parse server response: ${response.body}");
     }
+
+    if (response.statusCode >= 400) {
+      final msg = (data is Map && data.containsKey('message'))
+          ? data['message']
+          : "Request failed (${response.statusCode})";
+      throw Exception(msg);
+    }
+
+    return data;
   }
 
   // AUTH: Login
