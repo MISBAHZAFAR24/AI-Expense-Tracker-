@@ -36,6 +36,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final reportProvider = context.watch<ReportProvider>();
     final data = reportProvider.reportData;
     final isLoading = reportProvider.isLoading;
@@ -47,8 +48,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final expense = (summary?['totalExpense'] ?? 0).toDouble();
     final hasData = summary != null && (income > 0 || expense > 0);
 
+    final scaffoldBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
         backgroundColor: const Color(0xFF10B981),
         elevation: 0,
@@ -102,23 +107,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
       body: isLoading
           ? const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)))
           : !hasData
-              ? _buildEmptyState()
+              ? _buildEmptyState(textColor)
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildSummaryCards(income, expense),
+                      _buildSummaryCards(income, expense, cardBg, isDark),
                       const SizedBox(height: 24),
-                      _buildSectionTitle("Expense Breakdown", Icons.donut_small),
+                      _buildSectionTitle("Expense Breakdown", Icons.donut_small, textColor),
                       const SizedBox(height: 12),
-                      _buildPieChartCard(categoryAnalysis, expense),
+                      _buildPieChartCard(categoryAnalysis, expense, cardBg, textColor, isDark),
                       const SizedBox(height: 24),
-                      _buildSectionTitle("Income vs Expense Comparison", Icons.bar_chart),
+                      _buildSectionTitle("Income vs Expense Comparison", Icons.bar_chart, textColor),
                       const SizedBox(height: 12),
-                      _buildBarChartCard(income, expense),
+                      _buildBarChartCard(income, expense, cardBg, isDark),
                       const SizedBox(height: 24),
-                      _buildSectionTitle("Category Details", Icons.list_alt),
+                      _buildSectionTitle("Category Details", Icons.list_alt, textColor),
                       const SizedBox(height: 12),
                       ...categoryAnalysis.asMap().entries.map((entry) {
                         final index = entry.key;
@@ -127,7 +132,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         final catAmount = (cat['amount'] ?? 0).toDouble();
                         final color = _chartColors[index % _chartColors.length];
                         final percent = expense > 0 ? (catAmount / expense * 100) : 0.0;
-                        return _buildCategoryCard(catName, catAmount, percent, color);
+                        return _buildCategoryCard(catName, catAmount, percent, color, cardBg, textColor);
                       }),
                     ],
                   ),
@@ -135,20 +140,20 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _buildSectionTitle(String title, IconData icon, Color textColor) {
     return Row(
       children: [
         Icon(icon, color: const Color(0xFF10B981), size: 22),
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
         ),
       ],
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(Color textColor) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -162,9 +167,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
             child: const Icon(Icons.analytics_outlined, size: 70, color: Color(0xFF10B981)),
           ),
           const SizedBox(height: 16),
-          const Text(
+          Text(
             "No Transactions Found",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: textColor),
           ),
           const SizedBox(height: 8),
           const Text(
@@ -177,26 +182,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildSummaryCards(double income, double expense) {
+  Widget _buildSummaryCards(double income, double expense, Color cardBg, bool isDark) {
     final balance = income - expense;
     return Row(
       children: [
-        Expanded(child: _buildMetricCard("Income", income, const Color(0xFF10B981), Icons.arrow_downward_rounded)),
+        Expanded(child: _buildMetricCard("Income", income, const Color(0xFF10B981), Icons.arrow_downward_rounded, cardBg, isDark)),
         const SizedBox(width: 10),
-        Expanded(child: _buildMetricCard("Expense", expense, const Color(0xFFEF4444), Icons.arrow_upward_rounded)),
+        Expanded(child: _buildMetricCard("Expense", expense, const Color(0xFFEF4444), Icons.arrow_upward_rounded, cardBg, isDark)),
         const SizedBox(width: 10),
-        Expanded(child: _buildMetricCard("Balance", balance, balance >= 0 ? const Color(0xFF3B82F6) : Colors.orange, Icons.account_balance_wallet_rounded)),
+        Expanded(child: _buildMetricCard("Balance", balance, balance >= 0 ? const Color(0xFF3B82F6) : Colors.orange, Icons.account_balance_wallet_rounded, cardBg, isDark)),
       ],
     );
   }
 
-  Widget _buildMetricCard(String title, double amount, Color color, IconData icon) {
+  Widget _buildMetricCard(String title, double amount, Color color, IconData icon, Color cardBg, bool isDark) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
+        border: isDark ? Border.all(color: Colors.white10) : null,
+        boxShadow: isDark ? [] : [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
@@ -218,7 +224,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+                  style: TextStyle(fontSize: 12, color: isDark ? Colors.grey.shade400 : Colors.grey, fontWeight: FontWeight.w500),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -236,12 +242,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildPieChartCard(List breakdown, double totalExpense) {
+  Widget _buildPieChartCard(List breakdown, double totalExpense, Color cardBg, Color textColor, bool isDark) {
     if (breakdown.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-        child: const Center(child: Text("No category data available")),
+        decoration: BoxDecoration(color: cardBg, borderRadius: BorderRadius.circular(16)),
+        child: Center(child: Text("No category data available", style: TextStyle(color: textColor))),
       );
     }
 
@@ -266,9 +272,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
+        border: isDark ? Border.all(color: Colors.white10) : null,
+        boxShadow: isDark ? [] : [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))
         ],
       ),
@@ -302,7 +309,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Total Spent", style: TextStyle(fontSize: 11, color: Colors.grey)),
+                      Text("Total Spent", style: TextStyle(fontSize: 11, color: isDark ? Colors.grey.shade400 : Colors.grey)),
                       const SizedBox(height: 2),
                       Text(
                         "₹${totalExpense.toStringAsFixed(0)}",
@@ -329,7 +336,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 children: [
                   Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                   const SizedBox(width: 4),
-                  Text(catName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFF475569))),
+                  Text(catName, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: isDark ? Colors.grey.shade300 : const Color(0xFF475569))),
                 ],
               );
             }).toList(),
@@ -339,16 +346,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildBarChartCard(double income, double expense) {
+  Widget _buildBarChartCard(double income, double expense, Color cardBg, bool isDark) {
     final maxVal = (income > expense ? income : expense);
     final maxY = maxVal == 0 ? 100.0 : maxVal * 1.25;
 
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
+        border: isDark ? Border.all(color: Colors.white10) : null,
+        boxShadow: isDark ? [] : [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4))
         ],
       ),
@@ -363,7 +371,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   show: true,
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.grey.withValues(alpha: 0.15),
+                    color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.grey.withValues(alpha: 0.15),
                     strokeWidth: 1,
                     dashArray: [4, 4],
                   ),
@@ -453,14 +461,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildCategoryCard(String category, double amount, double percentage, Color color) {
+  Widget _buildCategoryCard(String category, double amount, double percentage, Color color, Color cardBg, Color textColor) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
+        border: Theme.of(context).brightness == Brightness.dark ? Border.all(color: Colors.white10) : null,
+        boxShadow: Theme.of(context).brightness == Brightness.dark ? [] : [
           BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 6, offset: const Offset(0, 2))
         ],
       ),
@@ -476,15 +485,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(category, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF1E293B))),
+                Text(category, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
                 const SizedBox(height: 2),
-                Text("${percentage.toStringAsFixed(1)}% of total expense", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                const Text("Percentage of expense", style: TextStyle(fontSize: 11, color: Colors.grey)),
               ],
             ),
           ),
-          Text(
-            "₹${amount.toStringAsFixed(2)}",
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF1E293B)),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "₹${amount.toStringAsFixed(2)}",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: textColor),
+              ),
+              Text(
+                "${percentage.toStringAsFixed(1)}%",
+                style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
         ],
       ),
