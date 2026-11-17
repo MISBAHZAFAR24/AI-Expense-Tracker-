@@ -1,6 +1,18 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 
+class ChatMessage {
+  final String text;
+  final bool isUser;
+  final DateTime timestamp;
+
+  ChatMessage({
+    required this.text,
+    required this.isUser,
+    DateTime? timestamp,
+  }) : timestamp = timestamp ?? DateTime.now();
+}
+
 class AiAdvisorScreen extends StatefulWidget {
   const AiAdvisorScreen({super.key});
 
@@ -9,50 +21,114 @@ class AiAdvisorScreen extends StatefulWidget {
 }
 
 class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
-  bool _isLoading = true;
+  bool _isInitialLoading = true;
+  bool _isAiThinking = false;
   Map<String, dynamic>? _aiData;
+  final List<ChatMessage> _messages = [];
   final TextEditingController _questionController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  final List<String> _quickPrompts = [
+    "💡 How to save more money?",
+    "📱 Can I buy a new phone?",
+    "📊 Analyze my top expenses",
+    "🍕 Am I spending too much on food?",
+  ];
 
   @override
   void initState() {
     super.initState();
-    _loadAIAdvice();
+    _loadInitialAdvice();
   }
 
   @override
   void dispose() {
     _questionController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadAIAdvice({String? question}) async {
-    if (!mounted) return;
-    setState(() => _isLoading = true);
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  Future<void> _loadInitialAdvice() async {
+    setState(() => _isInitialLoading = true);
     try {
-      final response = await ApiService.getAIAdvice(question: question);
-      if (response != null && response['status'] == 'success' && response['data'] != null) {
+      final response = await ApiService.getAIAdvice();
+      if (response['status'] == 'success' && response['data'] != null) {
         if (mounted) {
           setState(() {
             _aiData = response['data'];
+            final initialAdvice = _aiData?['advice'] ?? "Hello! I am your AI Financial Advisor. Ask me anything about your budget!";
+            _messages.clear();
+            _messages.add(ChatMessage(text: initialAdvice, isUser: false));
           });
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response?['message'] ?? "Failed to get AI advice")),
-          );
         }
       }
     } catch (e) {
       debugPrint("AI Advisor Error: $e");
+    } finally {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Could not connect to AI service")),
-        );
+        setState(() => _isInitialLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleSendMessage([String? textToSend]) async {
+    final text = textToSend ?? _questionController.text.trim();
+    if (text.isEmpty || _isAiThinking) return;
+
+    _questionController.clear();
+
+    setState(() {
+      _messages.add(ChatMessage(text: text, isUser: true));
+      _isAiThinking = true;
+    });
+
+    _scrollToBottom();
+
+    try {
+      final response = await ApiService.getAIAdvice(question: text);
+      if (response != null && response['status'] == 'success' && response['data'] != null) {
+        final advice = response['data']['advice'] ?? "I couldn't generate advice right now. Please try again.";
+        if (mounted) {
+          setState(() {
+            _aiData = response['data'];
+            _messages.add(ChatMessage(text: advice, isUser: false));
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _messages.add(ChatMessage(
+              text: "Sorry, I couldn't process that. ${response?['message'] ?? 'Please try again.'}",
+              isUser: false,
+            ));
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _messages.add(ChatMessage(
+            text: "Connection error. Please check your internet or try again later.",
+            isUser: false,
+          ));
+        });
       }
     } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() => _isAiThinking = false);
+        _scrollToBottom();
       }
     }
   }
@@ -60,42 +136,188 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF3F4F6),
       appBar: AppBar(
         backgroundColor: const Color(0xFF10B981),
-        title: const Text("AI Financial Advisor", style: TextStyle(color: Colors.white)),
+        title: const Row(
+          children: [
+            Icon(Icons.auto_awesome, color: Colors.white, size: 22),
+            SizedBox(width: 8),
+            Text("AI Financial Assistant", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ],
+        ),
         iconTheme: const IconThemeData(color: Colors.white),
+        elevation: 0,
       ),
       body: Column(
         children: [
+          _buildSummaryCard(),
+          _buildQuickPromptsBar(),
           Expanded(
-            child: _isLoading
+            child: _isInitialLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)))
-                : RefreshIndicator(
-                    onRefresh: _loadAIAdvice,
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSummaryCard(),
-                          const SizedBox(height: 24),
-                          const Row(
-                            children: [
-                              Icon(Icons.auto_awesome, color: Color(0xFF10B981)),
-                              SizedBox(width: 8),
-                              Text("AI Recommendations", 
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          _buildAdviceContent(_aiData?['advice'] ?? "No advice available yet. Add some transactions first!"),
-                        ],
-                      ),
-                    ),
+                : ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length + (_isAiThinking ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (index == _messages.length && _isAiThinking) {
+                        return _buildThinkingBubble();
+                      }
+                      final msg = _messages[index];
+                      return _buildChatBubble(msg);
+                    },
                   ),
           ),
           _buildQuestionInput(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard() {
+    final income = _aiData?['totalIncome'] ?? 0;
+    final expense = _aiData?['totalExpense'] ?? 0;
+    final balance = _aiData?['balance'] ?? 0;
+
+    return Container(
+      color: const Color(0xFF10B981),
+      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, 4))
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _statItem("Income", "₹$income", Colors.green),
+            Container(height: 30, width: 1, color: Colors.grey.shade300),
+            _statItem("Expense", "₹$expense", Colors.red),
+            Container(height: 30, width: 1, color: Colors.grey.shade300),
+            _statItem("Balance", "₹$balance", const Color(0xFF10B981)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statItem(String label, String value, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+        Text(label, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+      ],
+    );
+  }
+
+  Widget _buildQuickPromptsBar() {
+    return Container(
+      height: 48,
+      margin: const EdgeInsets.only(top: 8),
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: _quickPrompts.length,
+        itemBuilder: (context, index) {
+          final prompt = _quickPrompts[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ActionChip(
+              backgroundColor: Colors.white,
+              side: const BorderSide(color: Color(0xFF10B981), width: 1),
+              label: Text(prompt, style: const TextStyle(fontSize: 12, color: Color(0xFF10B981))),
+              onPressed: () => _handleSendMessage(prompt),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildChatBubble(ChatMessage message) {
+    final isUser = message.isUser;
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isUser ? const Color(0xFF10B981) : Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isUser ? 16 : 4),
+            bottomRight: Radius.circular(isUser ? 4 : 16),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (!isUser)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 6),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.smart_toy, size: 16, color: Color(0xFF10B981)),
+                    SizedBox(width: 4),
+                    Text("FinWise AI", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
+                  ],
+                ),
+              ),
+            SelectableText(
+              message.text,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.4,
+                color: isUser ? Colors.white : Colors.black87,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildThinkingBubble() {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 5)
+          ],
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 14,
+              height: 14,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)),
+            ),
+            SizedBox(width: 10),
+            Text("FinWise AI is analyzing...", style: TextStyle(fontSize: 13, color: Colors.grey)),
+          ],
+        ),
       ),
     );
   }
@@ -106,89 +328,40 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, -5))
+          BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 10, offset: const Offset(0, -3))
         ],
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _questionController,
-              decoration: InputDecoration(
-                hintText: "Ask AI advisor (e.g. Can I buy a phone?)",
-                hintStyle: const TextStyle(color: Colors.grey),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _questionController,
+                textInputAction: TextInputAction.send,
+                onSubmitted: (_) => _handleSendMessage(),
+                decoration: InputDecoration(
+                  hintText: "Ask AI (e.g. Can I afford a phone?)",
+                  hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                  filled: true,
+                  fillColor: const Color(0xFFF3F4F6),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(24),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          IconButton(
-            onPressed: () {
-              if (_questionController.text.trim().isNotEmpty) {
-                _loadAIAdvice(question: _questionController.text.trim());
-                _questionController.clear();
-              }
-            },
-            icon: const Icon(Icons.send, color: Color(0xFF10B981)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSummaryCard() {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const Text("Financial Snapshot", style: TextStyle(fontSize: 16, color: Colors.grey)),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _statItem("Income", "₹${_aiData?['totalIncome'] ?? 0}", Colors.green),
-                _statItem("Expense", "₹${_aiData?['totalExpense'] ?? 0}", Colors.red),
-                _statItem("Balance", "₹${_aiData?['balance'] ?? 0}", Colors.blue),
-              ],
+            const SizedBox(width: 8),
+            CircleAvatar(
+              backgroundColor: const Color(0xFF10B981),
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Colors.white, size: 20),
+                onPressed: () => _handleSendMessage(),
+              ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _statItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-      ],
-    );
-  }
-
-  Widget _buildAdviceContent(String advice) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))
-        ],
-      ),
-      child: Text(
-        advice,
-        style: const TextStyle(fontSize: 15, height: 1.5, color: Colors.black87),
       ),
     );
   }
