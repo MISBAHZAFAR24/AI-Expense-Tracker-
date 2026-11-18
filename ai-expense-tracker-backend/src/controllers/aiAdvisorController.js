@@ -75,6 +75,27 @@ const getAIAdvice = async (req, res) => {
             topWarning = "⚠️ No income logged yet. Please add income.";
         }
 
+        // Calculate Financial Persona Tag & Smart Tip
+        let financialPersona = "⚖️ Balanced Budgeter";
+        let smartTip = "💡 Tip: Setting aside 20% of your earnings at the start of the month builds wealth faster!";
+
+        if (totalIncome > 0) {
+            const savingsRatio = (balance / totalIncome) * 100;
+            if (savingsRatio >= 50) {
+                financialPersona = "🏦 Master Saver";
+                smartTip = "🎉 Awesome! You are saving over 50% of your earnings. Consider investing your surplus in Index Mutual Funds!";
+            } else if (savingsRatio >= 25) {
+                financialPersona = "⚖️ Balanced Budgeter";
+                smartTip = "💡 Good balance! Capping non-essential shopping can push your savings past 40%.";
+            } else if (savingsRatio > 0) {
+                financialPersona = "🛍️ Lifestyle Spender";
+                smartTip = "⚠️ You are spending most of your income. Try tracking discretionary expenses to build an emergency fund.";
+            } else {
+                financialPersona = "🚨 Overspending Risk";
+                smartTip = "🚨 Alert: Expenses exceed total income! Pause non-essential purchases for the next few weeks.";
+            }
+        }
+
         const financialData = {
             totalIncome,
             totalExpense,
@@ -100,6 +121,8 @@ const getAIAdvice = async (req, res) => {
                 healthScore,
                 riskLevel,
                 topWarning,
+                financialPersona,
+                smartTip,
                 advice
             }
         });

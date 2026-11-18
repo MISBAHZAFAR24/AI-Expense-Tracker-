@@ -29,7 +29,9 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
   final ScrollController _scrollController = ScrollController();
 
   final List<String> _quickPrompts = [
-    "💡 How to save more money?",
+    "🏆 What is my Financial Persona?",
+    "💡 Give me a Money Saving Tip",
+    "🎯 Help me plan a Savings Goal",
     "📱 Can I buy a phone for ₹15000?",
     "💳 Can I afford a ₹5000 EMI?",
     "📅 What is my safe daily spending limit?",
@@ -175,6 +177,7 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
         children: [
           _buildSummaryCard(),
           _buildHealthScoreCard(),
+          _buildSmartTipCard(),
           _buildQuickPromptsBar(),
           Expanded(
             child: _isInitialLoading
@@ -243,6 +246,7 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
     final healthScore = (_aiData?['healthScore'] ?? 100) as int;
     final riskLevel = (_aiData?['riskLevel'] ?? "EXCELLENT").toString();
     final warning = (_aiData?['topWarning'] ?? "").toString();
+    final persona = (_aiData?['financialPersona'] ?? "⚖️ Balanced Budgeter").toString();
 
     Color scoreColor = Colors.green;
     if (healthScore < 40) {
@@ -252,7 +256,7 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -270,6 +274,7 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -282,7 +287,7 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
                     Icon(Icons.shield_outlined, size: 14, color: scoreColor),
                     const SizedBox(width: 4),
                     Text(
-                      "AI Health Score: $healthScore/100 ($riskLevel)",
+                      "AI Score: $healthScore/100 ($riskLevel)",
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -290,6 +295,21 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
                       ),
                     ),
                   ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  persona,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF059669),
+                  ),
                 ),
               ),
             ],
@@ -301,6 +321,33 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.black87),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmartTipCard() {
+    final tip = (_aiData?['smartTip'] ?? "").toString();
+    if (tip.isEmpty) return const SizedBox();
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFEF3C7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.lightbulb_outline, color: Color(0xFFD97706), size: 18),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              tip,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF92400E)),
+            ),
+          ),
         ],
       ),
     );
