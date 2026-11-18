@@ -426,9 +426,10 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
                 controller: _questionController,
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _handleSendMessage(),
+                style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w500),
                 decoration: InputDecoration(
                   hintText: "Ask AI (e.g. Can I afford a phone?)",
-                  hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                  hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                   filled: true,
                   fillColor: const Color(0xFFF3F4F6),
                   border: OutlineInputBorder(
