@@ -48,8 +48,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final expense = (summary?['totalExpense'] ?? 0).toDouble();
     final hasData = summary != null && (income > 0 || expense > 0);
 
-    final scaffoldBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
-    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final scaffoldBg = isDark ? const Color(0xFF121212) : const Color(0xFFF8FAFC);
+    final cardBg = isDark ? const Color(0xFF1E1E1E) : Colors.white;
     final textColor = isDark ? Colors.white : const Color(0xFF1E293B);
 
     return Scaffold(
@@ -82,7 +82,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _selectedType,
-                dropdownColor: const Color(0xFF047857),
+                dropdownColor: isDark ? const Color(0xFF1E1E1E) : const Color(0xFF047857),
                 icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white),
                 items: ["daily", "weekly", "monthly", "yearly"].map((String value) {
                   return DropdownMenuItem<String>(
