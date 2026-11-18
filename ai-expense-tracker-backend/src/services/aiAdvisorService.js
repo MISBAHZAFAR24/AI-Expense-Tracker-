@@ -8,72 +8,74 @@ const MODEL_CANDIDATES = [
     "gemini-1.5-pro"
 ];
 
-// Smart Financial Intelligence Engine (Instant 100% Reliable Fallback Engine)
+// Smart Universal AI Engine (Handles Hindi/English, Greetings, Purchases, Savings & General Questions)
 const generateSmartAdvice = (data) => {
     const { totalIncome, totalExpense, balance, categoryExpenses, question } = data;
 
-    let response = "";
+    if (!question || String(question).trim().length === 0) {
+        const topCategoryEntry = Object.entries(categoryExpenses || {}).sort((a, b) => b[1] - a[1])[0];
+        const topCatName = topCategoryEntry ? topCategoryEntry[0] : "General";
+        const topCatVal = topCategoryEntry ? topCategoryEntry[1] : 0;
+        const savingsRatio = totalIncome > 0 ? Math.round((balance / totalIncome) * 100) : 0;
 
-    // 1. Direct Question Handler if user asked a specific question
-    if (question && String(question).trim().length > 0) {
-        const q = String(question).toLowerCase();
-
-        // Extract numbers in question (e.g. "phone for 15000")
-        const amountMatch = String(question).match(/\b\d+\b/);
-        const itemAmount = amountMatch ? parseInt(amountMatch[0], 10) : null;
-
-        if (q.includes("phone") || q.includes("buy") || q.includes("afford") || q.includes("car") || q.includes("trip") || q.includes("laptop")) {
-            if (itemAmount) {
-                if (balance >= itemAmount) {
-                    const remaining = balance - itemAmount;
-                    response += `YES! You can afford this purchase of ₹${itemAmount}.\n\n- Current Balance: ₹${balance}\n- Remaining Buffer after purchase: ₹${remaining}\n\nRecommendation: You have enough balance, but keep at least ₹${Math.round(totalIncome * 0.2)} saved for emergencies!`;
-                } else {
-                    const diff = itemAmount - balance;
-                    response += `NO, it is NOT recommended right now.\n\n- Purchase Cost: ₹${itemAmount}\n- Current Balance: ₹${balance}\n- Shortfall: ₹${diff}\n\nRecommendation: You need ₹${diff} more in savings before making this purchase. Try reducing non-essential expenses for the next few weeks.`;
-                }
-            } else {
-                if (balance > totalIncome * 0.3) {
-                    response += `Based on your current balance of ₹${balance} and expenses of ₹${totalExpense}, you have a good financial cushion. Make sure any major purchase stays under ₹${Math.round(balance * 0.5)}!`;
-                } else {
-                    response += `Your current balance is ₹${balance}. It is safer to hold off on major non-essential purchases until your emergency savings grow.`;
-                }
-            }
-            return response;
-        }
-
-        if (q.includes("save") || q.includes("saving") || q.includes("money")) {
-            response += `💡 Smart Saving Strategy for You:\n\n1. Target the 50/30/20 Rule: Allocate 50% for Needs, 30% for Wants, and 20% directly into Savings.\n2. Your Current Savings Ratio: ${totalIncome > 0 ? Math.round((balance / totalIncome) * 100) : 0}%\n3. Practical Step: Set aside ₹${Math.round(totalIncome * 0.2)} at the beginning of the month before making discretionary expenses!`;
-            return response;
-        }
-
-        if (q.includes("food") || q.includes("eat") || q.includes("restaurant")) {
-            const foodSpend = categoryExpenses?.Food || categoryExpenses?.food || 0;
-            response += `🍕 Food Expense Analysis:\n\n- You have spent ₹${foodSpend} on Food.\n- Food Share of Income: ${totalIncome > 0 ? Math.round((foodSpend / totalIncome) * 100) : 0}%\n\nTip: Cooking at home or meal prepping on weekends can save you up to 40% on monthly food costs!`;
-            return response;
-        }
-
-        if (q.includes("top") || q.includes("highest") || q.includes("summary") || q.includes("analyze")) {
-            const topCategoryEntry = Object.entries(categoryExpenses || {}).sort((a, b) => b[1] - a[1])[0];
-            const topName = topCategoryEntry ? topCategoryEntry[0] : "General";
-            const topAmount = topCategoryEntry ? topCategoryEntry[1] : 0;
-            response += `📊 Spending Analysis:\n\n- Highest Spending Area: ${topName} (₹${topAmount})\n- Total Expenses: ₹${totalExpense}\n- Remaining Income: ₹${balance}\n\nActionable Advice: Reducing ${topName} expenses by 15% will save you ₹${Math.round(topAmount * 0.15)} next month!`;
-            return response;
-        }
-
-        // Generic user question answer fallback
-        response += `💡 Financial Answer to "${question}":\n\n- Current Earnings: ₹${totalIncome}\n- Total Expenses: ₹${totalExpense}\n- Available Balance: ₹${balance}\n\nAdvice: Focus on maintaining your emergency savings buffer of at least 3 months of expenses (₹${totalExpense * 3}).`;
-        return response;
+        return `📊 Financial Health Assessment:\n\n1. Income vs Expense:\n- Total Earnings: ₹${totalIncome}\n- Total Spending: ₹${totalExpense}\n- Net Balance: ₹${balance} (${savingsRatio}% savings rate)\n\n2. Primary Cost Driver:\n- Highest Category: ${topCatName} at ₹${topCatVal}\n\n3. Actionable Advice:\n- Keep your essential living expenses under 60% of earnings.\n- Try saving at least ₹${Math.round(totalIncome * 0.2)} at the start of each month!`;
     }
 
-    // Default Comprehensive Financial Advice Analysis
-    const topCategoryEntry = Object.entries(categoryExpenses || {}).sort((a, b) => b[1] - a[1])[0];
-    const topCatName = topCategoryEntry ? topCategoryEntry[0] : "General";
-    const topCatVal = topCategoryEntry ? topCategoryEntry[1] : 0;
-    const savingsRatio = totalIncome > 0 ? Math.round((balance / totalIncome) * 100) : 0;
+    const q = String(question).toLowerCase().trim();
 
-    response += `📊 Financial Health Assessment:\n\n1. Income vs Expense:\n- Total Earnings: ₹${totalIncome}\n- Total Spending: ₹${totalExpense}\n- Net Balance: ₹${balance} (${savingsRatio}% savings rate)\n\n2. Primary Cost Driver:\n- Highest Category: ${topCatName} at ₹${topCatVal}\n\n3. Actionable Advice:\n- Keep your essential living expenses under 60% of earnings.\n- Try saving at least ₹${Math.round(totalIncome * 0.2)} at the start of each month!`;
+    // 1. Greetings & Casual Chat
+    if (q === "hi" || q === "hello" || q === "hey" || q.includes("kaise ho") || q.includes("kya hal") || q.includes("kya haal")) {
+        return `Hello! 👋 Main FinWise AI Smart Assistant hu. Main badiya hu! Aap bataiye, aaj mai aapki budget, savings, ya expense tracking me kya help kar sakta hu?`;
+    }
 
-    return response;
+    if (q.includes("who are you") || q.includes("kon ho") || q.includes("kaun ho") || q.includes("namaste") || q.includes("name")) {
+        return `Namaste! 🙏 Main FinWise AI Assistant hu. Main aapke real-time income, expenses, aur balance ko analyze karke smart money saving tips aur purchase guidance deta hu!`;
+    }
+
+    // 2. Number extraction for purchases
+    const amountMatch = String(question).match(/\b\d+\b/);
+    const itemAmount = amountMatch ? parseInt(amountMatch[0], 10) : null;
+
+    if (q.includes("phone") || q.includes("buy") || q.includes("afford") || q.includes("car") || q.includes("trip") || q.includes("laptop") || q.includes("khareed") || q.includes("khared") || q.includes("lenu")) {
+        if (itemAmount) {
+            if (balance >= itemAmount) {
+                const remaining = balance - itemAmount;
+                return `YES! Aap ₹${itemAmount} ka ye purchase afford kar sakte hain. 🎉\n\n- Current Balance: ₹${balance}\n- Purchase ke baad bacha Balance: ₹${remaining}\n\nRecommendation: Transaction ke baad bhi aapke paas emergency buffer bacha rahega!`;
+            } else {
+                const diff = itemAmount - balance;
+                return `NO! Abhi ye khareedna recommended nahi hai. ⚠️\n\n- Purchase Cost: ₹${itemAmount}\n- Current Balance: ₹${balance}\n- Shortfall (Kami): ₹${diff}\n\nRecommendation: Is purchase ke liye aapko ₹${diff} aur save karne ki zaroorat hai. Pehle balance grow hone dein!`;
+            }
+        } else {
+            if (balance > totalIncome * 0.3) {
+                return `Aapka current balance ₹${balance} hai aur total expense ₹${totalExpense} hai. Aap safe zone me hain! Kisi bhi major purchase ka cost ₹${Math.round(balance * 0.5)} se zyada nahi hona chahiye.`;
+            } else {
+                return `Aapka current balance ₹${balance} hai. Unnecessary expenses ko pause karein aur emergency fund build karein!`;
+            }
+        }
+    }
+
+    // 3. Savings & Money Advice
+    if (q.includes("save") || q.includes("saving") || q.includes("paisa") || q.includes("bacha") || q.includes("money")) {
+        const savingsRatio = totalIncome > 0 ? Math.round((balance / totalIncome) * 100) : 0;
+        return `💡 Smart Saving Formula:\n\n1. 50/30/20 Rule Follow Karein:\n   - 50% Needs (Rent, Bills)\n   - 30% Wants (Shopping, Outing)\n   - 20% Direct Savings!\n2. Aapka Current Savings Rate: ${savingsRatio}%\n3. Tip: Har mahine ki shuruaat me kam se kam ₹${Math.round(totalIncome * 0.2)} pehle save karein, phir bacha hua amount kharch karein!`;
+    }
+
+    // 4. Food / Outing Category
+    if (q.includes("food") || q.includes("khana") || q.includes("eat") || q.includes("restaurant") || q.includes("swiggy") || q.includes("zomato")) {
+        const foodSpend = categoryExpenses?.Food || categoryExpenses?.food || 0;
+        return `🍕 Food Expense Analysis:\n\n- Total Food Expense: ₹${foodSpend}\n- Income Share: ${totalIncome > 0 ? Math.round((foodSpend / totalIncome) * 100) : 0}%\n\nTip: Home cooking aur weekend meal prep se aap monthly food bill par 30-40% tak save kar sakte hain!`;
+    }
+
+    // 5. Category Breakdown / Top Expense
+    if (q.includes("top") || q.includes("highest") || q.includes("summary") || q.includes("kharcha") || q.includes("analyze")) {
+        const topCategoryEntry = Object.entries(categoryExpenses || {}).sort((a, b) => b[1] - a[1])[0];
+        const topName = topCategoryEntry ? topCategoryEntry[0] : "General";
+        const topAmount = topCategoryEntry ? topCategoryEntry[1] : 0;
+        return `📊 Spending Analysis:\n\n- Sabse Zyada Kharcha: ${topName} (₹${topAmount})\n- Total Expense: ₹${totalExpense}\n- Available Balance: ₹${balance}\n\nTip: Agar aap ${topName} category me 15% reduction karenge, toh agle month ₹${Math.round(topAmount * 0.15)} extra save ho jayenge!`;
+    }
+
+    // 6. Universal Question Answer Fallback
+    return `💡 Answer for "${question}":\n\n- Total Earnings: ₹${totalIncome}\n- Total Expenses: ₹${totalExpense}\n- Available Balance: ₹${balance}\n\nAdvice: FinWise AI recommends keeping an emergency buffer of 3 months expenses (approx ₹${totalExpense * 3}). Any decision that keeps your balance positive is a smart move!`;
 };
 
 const generateWithRetry = async (prompt) => {
@@ -142,7 +144,7 @@ Keep the response short and easy to understand.
         const response = await generateWithRetry(prompt);
         return response;
     } catch (error) {
-        console.error("Gemini API Error, switching to Smart Financial Intelligence Engine:", error.message);
+        console.error("Gemini API Error, switching to Universal Smart Financial Engine:", error.message);
         // Instant 100% reliable fallback answer
         return generateSmartAdvice(financialData);
     }
