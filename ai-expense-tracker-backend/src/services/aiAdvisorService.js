@@ -2,9 +2,11 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "dummy_key");
 
-// Only gemini-3.6-flash model
+// Official valid Google Gemini models
 const MODEL_CANDIDATES = [
-    "gemini-3.6-flash"
+    "gemini-1.5-flash",
+    "gemini-2.0-flash-exp",
+    "gemini-1.5-pro"
 ];
 
 // Smart Universal AI Engine (Handles Hindi/English, Greetings, Purchases, EMI, Category Queries & Investment)
@@ -137,16 +139,16 @@ const generateWithRetry = async (prompt) => {
             console.log(`Trying AI Model: ${modelName}`);
             const model = genAI.getGenerativeModel({ model: modelName });
 
-            // 4-Second Timeout to ensure fast responses
+            // 8-Second Timeout to give Gemini enough time to generate full AI answer
             const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("Gemini API request timed out (4s limit)")), 4000)
+                setTimeout(() => reject(new Error("Gemini API request timed out (8s limit)")), 8000)
             );
 
             const apiPromise = model.generateContent(prompt).then(res => res.response.text());
             const text = await Promise.race([apiPromise, timeoutPromise]);
 
             if (text && text.trim().length > 0) {
-                console.log(`AI Success with model: ${modelName}`);
+                console.log(`AI Success with official model: ${modelName}`);
                 return text;
             }
         } catch (error) {
