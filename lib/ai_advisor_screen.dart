@@ -175,24 +175,27 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
       ),
       body: Column(
         children: [
-          _buildSummaryCard(),
-          _buildHealthScoreCard(),
-          _buildSmartTipCard(),
-          _buildQuickPromptsBar(),
           Expanded(
             child: _isInitialLoading
                 ? const Center(child: CircularProgressIndicator(color: Color(0xFF10B981)))
-                : ListView.builder(
+                : ListView(
                     controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _messages.length + (_isAiThinking ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      if (index == _messages.length && _isAiThinking) {
-                        return _buildThinkingBubble();
-                      }
-                      final msg = _messages[index];
-                      return _buildChatBubble(msg);
-                    },
+                    padding: const EdgeInsets.only(bottom: 16),
+                    children: [
+                      _buildSummaryCard(),
+                      _buildHealthScoreCard(),
+                      _buildSmartTipCard(),
+                      _buildQuickPromptsBar(),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            ..._messages.map((msg) => _buildChatBubble(msg)),
+                            if (_isAiThinking) _buildThinkingBubble(),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
           ),
           _buildQuestionInput(),
