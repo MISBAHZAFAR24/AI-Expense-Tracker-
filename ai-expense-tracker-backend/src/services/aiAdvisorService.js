@@ -2,11 +2,9 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "dummy_key");
 
-// Valid official Google Gemini Flash models
+// Only gemini-3.6-flash model
 const MODEL_CANDIDATES = [
-    "gemini-1.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-pro"
+    "gemini-3.6-flash"
 ];
 
 // Smart Universal AI Engine (Handles Hindi/English, Greetings, Purchases, EMI, Category Queries & Investment)
