@@ -8,7 +8,7 @@ const MODEL_CANDIDATES = [
     "gemini-1.5-pro"
 ];
 
-// Smart Universal AI Engine (Handles Hindi/English, Greetings, Purchases, Savings & General Questions)
+// Smart Universal AI Engine (Handles Hindi/English, Greetings, Purchases, EMI, Emergency Fund, Investment & Daily Limits)
 const generateSmartAdvice = (data) => {
     const { totalIncome, totalExpense, balance, categoryExpenses, question } = data;
 
@@ -32,10 +32,52 @@ const generateSmartAdvice = (data) => {
         return `Namaste! 🙏 Main FinWise AI Assistant hu. Main aapke real-time income, expenses, aur balance ko analyze karke smart money saving tips aur purchase guidance deta hu!`;
     }
 
-    // 2. Number extraction for purchases
+    // Number extraction helper
     const amountMatch = String(question).match(/\b\d+\b/);
     const itemAmount = amountMatch ? parseInt(amountMatch[0], 10) : null;
 
+    // 2. EMI / Loan / Credit Card Affordability
+    if (q.includes("emi") || q.includes("loan") || q.includes("kist") || q.includes("installment") || q.includes("credit card")) {
+        if (itemAmount) {
+            const maxSafeEmi = Math.round(totalIncome * 0.15); // Max 15% of income safe for EMI
+            if (itemAmount <= maxSafeEmi && balance > itemAmount * 2) {
+                return `YES! ₹${itemAmount}/month ki EMI aapke budget me safe hai. ✅\n\n- Monthly Safe EMI Target (15% Income): ₹${maxSafeEmi}\n- Total Balance: ₹${balance}\n\nTip: EMI chalu hone ke baad bhi kam se kam ₹${Math.round(totalIncome * 0.2)} monthly savings maintain rakhein!`;
+            } else {
+                return `NO! ₹${itemAmount}/month ki EMI aapke budget par pressure daal sakti hai. ⚠️\n\n- Safe Monthly EMI Limit: ₹${maxSafeEmi}\n- Available Balance: ₹${balance}\n\nTip: High EMI lene ke bajaye pehle down payment badhayein ya chota tenure select karein.`;
+            }
+        } else {
+            const safeEmi = Math.round(totalIncome * 0.15);
+            return `💳 EMI & Loan Guidance:\n\n- Aapki monthly income (₹${totalIncome}) ke hisab se maximum safe EMI **₹${safeEmi}/month** honi chahiye.\n- Total EMIs aapki income ka 20% se zyada kabhi nahi honi chahiye!`;
+        }
+    }
+
+    // 3. Emergency Fund Calculation
+    if (q.includes("emergency") || q.includes("fund") || q.includes("crisis") || q.includes("survive")) {
+        const targetEmergencyFund = Math.round(totalExpense * 3);
+        const fundStatus = balance >= targetEmergencyFund ? "Achieved 🎉" : "Building Phase ⏳";
+        return `🛡️ Emergency Fund Advisor:\n\n- Target Emergency Fund (3 Months Expenses): ₹${targetEmergencyFund}\n- Current Available Balance: ₹${balance}\n- Status: ${fundStatus}\n\nRule: Emergency fund ko hamesha high-liquidity Savings Account ya Liquid Mutual Fund me rakhein taaki zaroorat padne par instant withdraw kar sakein!`;
+    }
+
+    // 4. Daily Spending Allowance / Daily Limit
+    if (q.includes("daily") || q.includes("per day") || q.includes("roz") || q.includes("rozaana") || q.includes("aaj")) {
+        const remainingDays = 15; // Average days left buffer
+        const safeDailyLimit = balance > 0 ? Math.round(balance / remainingDays) : 0;
+        return `📅 Daily Spending Allowance:\n\n- Available Balance: ₹${balance}\n- Estimated Safe Daily Spending Limit: **₹${safeDailyLimit}/day**\n\nTip: Agar aap aaj ₹${safeDailyLimit} se kam kharch karte hain, toh bacha hua amount aapki monthly savings me add ho jayega!`;
+    }
+
+    // 5. Investment & Wealth Guidance (SIP, FD, Mutual Funds)
+    if (q.includes("invest") || q.includes("sip") || q.includes("fd") || q.includes("mutual fund") || q.includes("stock")) {
+        const suggestedSip = Math.round(balance * 0.3);
+        return `📈 Smart Wealth & Investment Plan:\n\n- Current Balance: ₹${balance}\n- Recommended Monthly SIP Amount: **₹${suggestedSip > 0 ? suggestedSip : 1000}**\n\nStrategy:\n1. Emergency Fund (₹${Math.round(totalExpense * 2)}) pehle alag rakhein.\n2. Bacha hua surplus amount Index Mutual Funds ya Nifty 50 SIP me long term ke liye invest karein!`;
+    }
+
+    // 6. Rent & Essential Bills Check
+    if (q.includes("rent") || q.includes("bills") || q.includes("kiraya") || q.includes("electric")) {
+        const rentSpend = categoryExpenses?.Rent || categoryExpenses?.rent || categoryExpenses?.Bills || 0;
+        return `🏠 Rent & Bills Breakdown:\n\n- Total Rent/Bills Recorded: ₹${rentSpend}\n- Share of Monthly Earnings: ${totalIncome > 0 ? Math.round((rentSpend / totalIncome) * 100) : 0}%\n\nStandard Rule: Essential fixed costs (Rent + Utility Bills) aapki gross income ka 30-35% se zyada nahi hona chahiye.`;
+    }
+
+    // 7. Number extraction for purchases
     if (q.includes("phone") || q.includes("buy") || q.includes("afford") || q.includes("car") || q.includes("trip") || q.includes("laptop") || q.includes("khareed") || q.includes("khared") || q.includes("lenu")) {
         if (itemAmount) {
             if (balance >= itemAmount) {
@@ -54,19 +96,19 @@ const generateSmartAdvice = (data) => {
         }
     }
 
-    // 3. Savings & Money Advice
+    // 8. Savings & Money Advice
     if (q.includes("save") || q.includes("saving") || q.includes("paisa") || q.includes("bacha") || q.includes("money")) {
         const savingsRatio = totalIncome > 0 ? Math.round((balance / totalIncome) * 100) : 0;
         return `💡 Smart Saving Formula:\n\n1. 50/30/20 Rule Follow Karein:\n   - 50% Needs (Rent, Bills)\n   - 30% Wants (Shopping, Outing)\n   - 20% Direct Savings!\n2. Aapka Current Savings Rate: ${savingsRatio}%\n3. Tip: Har mahine ki shuruaat me kam se kam ₹${Math.round(totalIncome * 0.2)} pehle save karein, phir bacha hua amount kharch karein!`;
     }
 
-    // 4. Food / Outing Category
+    // 9. Food / Outing Category
     if (q.includes("food") || q.includes("khana") || q.includes("eat") || q.includes("restaurant") || q.includes("swiggy") || q.includes("zomato")) {
         const foodSpend = categoryExpenses?.Food || categoryExpenses?.food || 0;
         return `🍕 Food Expense Analysis:\n\n- Total Food Expense: ₹${foodSpend}\n- Income Share: ${totalIncome > 0 ? Math.round((foodSpend / totalIncome) * 100) : 0}%\n\nTip: Home cooking aur weekend meal prep se aap monthly food bill par 30-40% tak save kar sakte hain!`;
     }
 
-    // 5. Category Breakdown / Top Expense
+    // 10. Category Breakdown / Top Expense
     if (q.includes("top") || q.includes("highest") || q.includes("summary") || q.includes("kharcha") || q.includes("analyze")) {
         const topCategoryEntry = Object.entries(categoryExpenses || {}).sort((a, b) => b[1] - a[1])[0];
         const topName = topCategoryEntry ? topCategoryEntry[0] : "General";
@@ -74,7 +116,7 @@ const generateSmartAdvice = (data) => {
         return `📊 Spending Analysis:\n\n- Sabse Zyada Kharcha: ${topName} (₹${topAmount})\n- Total Expense: ₹${totalExpense}\n- Available Balance: ₹${balance}\n\nTip: Agar aap ${topName} category me 15% reduction karenge, toh agle month ₹${Math.round(topAmount * 0.15)} extra save ho jayenge!`;
     }
 
-    // 6. Universal Question Answer Fallback
+    // 11. Universal Question Answer Fallback
     return `💡 Answer for "${question}":\n\n- Total Earnings: ₹${totalIncome}\n- Total Expenses: ₹${totalExpense}\n- Available Balance: ₹${balance}\n\nAdvice: FinWise AI recommends keeping an emergency buffer of 3 months expenses (approx ₹${totalExpense * 3}). Any decision that keeps your balance positive is a smart move!`;
 };
 

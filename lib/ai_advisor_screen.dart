@@ -30,9 +30,12 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
 
   final List<String> _quickPrompts = [
     "💡 How to save more money?",
-    "📱 Can I buy a new phone?",
+    "📱 Can I buy a phone for ₹15000?",
+    "💳 Can I afford a ₹5000 EMI?",
+    "📅 What is my safe daily spending limit?",
+    "📈 Where should I invest my savings?",
+    "🛡️ How much emergency fund do I need?",
     "📊 Analyze my top expenses",
-    "🍕 Am I spending too much on food?",
   ];
 
   @override
