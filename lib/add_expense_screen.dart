@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'expense_model.dart';
 import 'expense_provider.dart';
@@ -47,14 +49,56 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
 
   Future<void> _handleScanReceipt() async {
-    setState(() => _isScanning = true);
+    final ImagePicker picker = ImagePicker();
+
+    final ImageSource? source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Color(0xFF10B981)),
+                title: const Text("Take Photo with Camera"),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Color(0xFF10B981)),
+                title: const Text("Choose Image from Gallery"),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (source == null) return;
+
     try {
-      final res = await ApiService.scanReceipt("sample_bill");
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+
+      if (image == null) return;
+
+      setState(() => _isScanning = true);
+
+      final bytes = await image.readAsBytes();
+      final base64Image = base64Encode(bytes);
+
+      final res = await ApiService.scanReceipt(base64Image);
       if (res['status'] == 'success' && res['data'] != null) {
         final data = res['data'];
         setState(() {
           titleController.text = data['title'] ?? "Scanned Receipt Expense";
-          amountController.text = (data['amount'] ?? 150.0).toString();
+          amountController.text = (data['amount'] ?? 0.0).toString();
           final scannedCat = data['category'] ?? "Shopping";
           const categories = ["Food", "Transport", "Rent", "Shopping", "Entertainment", "Health", "Others"];
           if (categories.contains(scannedCat)) {
@@ -66,15 +110,26 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: Color(0xFF10B981),
-              content: Text("✨ Receipt Scanned with AI! Fields auto-filled."),
+            SnackBar(
+              backgroundColor: const Color(0xFF10B981),
+              content: Text("✨ Receipt Scanned! Amount: ₹${data['amount']}"),
             ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(res['message'] ?? "Could not scan receipt")),
           );
         }
       }
     } catch (e) {
       debugPrint("Scan error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error picking image: $e")),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isScanning = false);
     }
