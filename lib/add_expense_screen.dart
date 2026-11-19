@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -50,41 +51,63 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
 
   Future<void> _handleScanReceipt() async {
     final ImagePicker picker = ImagePicker();
-
-    final ImageSource? source = await showModalBottomSheet<ImageSource>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (BuildContext context) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt, color: Color(0xFF10B981)),
-                title: const Text("Take Photo with Camera"),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo_library, color: Color(0xFF10B981)),
-                title: const Text("Choose Image from Gallery"),
-                onTap: () => Navigator.pop(context, ImageSource.gallery),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-
-    if (source == null) return;
+    XFile? image;
 
     try {
-      final XFile? image = await picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
-      );
+      if (kIsWeb) {
+        // On Web Browsers, gallery picker opens native OS file/camera prompt seamlessly
+        image = await picker.pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 80,
+        );
+      } else {
+        // On Mobile App, offer Camera or Gallery Bottom Sheet
+        final ImageSource? source = await showModalBottomSheet<ImageSource>(
+          context: context,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (BuildContext context) {
+            return SafeArea(
+              child: Wrap(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.camera_alt, color: Color(0xFF10B981)),
+                    title: const Text("Take Photo with Camera"),
+                    onTap: () => Navigator.pop(context, ImageSource.camera),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.photo_library, color: Color(0xFF10B981)),
+                    title: const Text("Choose Image from Gallery"),
+                    onTap: () => Navigator.pop(context, ImageSource.gallery),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+
+        if (source == null) return;
+
+        try {
+          image = await picker.pickImage(
+            source: source,
+            maxWidth: 1024,
+            maxHeight: 1024,
+            imageQuality: 80,
+          );
+        } catch (e) {
+          // Camera permission fallback to gallery
+          image = await picker.pickImage(
+            source: ImageSource.gallery,
+            maxWidth: 1024,
+            maxHeight: 1024,
+            imageQuality: 80,
+          );
+        }
+      }
 
       if (image == null) return;
 
@@ -127,7 +150,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       debugPrint("Scan error: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error picking image: $e")),
+          SnackBar(content: Text("Could not select image: $e")),
         );
       }
     } finally {
