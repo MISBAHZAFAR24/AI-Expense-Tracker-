@@ -29,6 +29,7 @@ class _AiAdvisorScreenState extends State<AiAdvisorScreen> {
   final ScrollController _scrollController = ScrollController();
 
   final List<String> _quickPrompts = [
+    "🔮 Predict my next month expenses",
     "🏆 What is my Financial Persona?",
     "💡 Give me a Money Saving Tip",
     "🎯 Help me plan a Savings Goal",

@@ -230,6 +230,45 @@ class ApiService {
     }
   }
 
+  // AI RECEIPT SCANNER
+  static Future<Map<String, dynamic>> scanReceipt(String imageBase64) async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse("$baseUrl/ai-advisor/scan-receipt"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token"
+        },
+        body: jsonEncode({"imageBase64": imageBase64}),
+      ).timeout(const Duration(seconds: 30));
+
+      return _processResponse(response, "ScanReceipt");
+    } catch (e) {
+      debugPrint("ScanReceipt Error: $e");
+      return {"message": e.toString()};
+    }
+  }
+
+  // AI EXPENSE PREDICTOR
+  static Future<Map<String, dynamic>> predictExpenses() async {
+    try {
+      final token = await getToken();
+      final response = await http.post(
+        Uri.parse("$baseUrl/ai-advisor/predict-expenses"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token"
+        },
+      ).timeout(_timeoutDuration);
+
+      return _processResponse(response, "PredictExpenses");
+    } catch (e) {
+      debugPrint("PredictExpenses Error: $e");
+      return {"message": e.toString()};
+    }
+  }
+
   // REPORTS
   static Future<Map<String, dynamic>> getReports(String timeframe) async {
     try {

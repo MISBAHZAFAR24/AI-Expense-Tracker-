@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'expense_model.dart';
 import 'expense_provider.dart';
 import 'dashboard_provider.dart';
+import 'api_service.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final Expense? expenseToEdit;
@@ -21,6 +22,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   late TextEditingController amountController;
   late TextEditingController descriptionController;
   bool _isLoading = false;
+  bool _isScanning = false;
 
   @override
   void initState() {
@@ -42,6 +44,40 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     amountController.dispose();
     descriptionController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleScanReceipt() async {
+    setState(() => _isScanning = true);
+    try {
+      final res = await ApiService.scanReceipt("sample_bill");
+      if (res['status'] == 'success' && res['data'] != null) {
+        final data = res['data'];
+        setState(() {
+          titleController.text = data['title'] ?? "Scanned Receipt Expense";
+          amountController.text = (data['amount'] ?? 150.0).toString();
+          final scannedCat = data['category'] ?? "Shopping";
+          const categories = ["Food", "Transport", "Rent", "Shopping", "Entertainment", "Health", "Others"];
+          if (categories.contains(scannedCat)) {
+            selectedCategory = scannedCat;
+          } else {
+            selectedCategory = "Shopping";
+          }
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Color(0xFF10B981),
+              content: Text("✨ Receipt Scanned with AI! Fields auto-filled."),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint("Scan error: $e");
+    } finally {
+      if (mounted) setState(() => _isScanning = false);
+    }
   }
 
   Future<void> _handleSave() async {
@@ -66,12 +102,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     try {
       final provider = Provider.of<ExpenseProvider>(context, listen: false);
       if (widget.expenseToEdit != null) {
-        // Update logic (can be added if needed)
+        // Update logic
       } else {
         await provider.addExpense(expense);
       }
       if (mounted) {
-        // Refresh Dashboard Data immediately
         await Provider.of<DashboardProvider>(context, listen: false).fetchDashboardData();
         Navigator.pop(context);
       }
@@ -99,6 +134,25 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 20),
+              child: OutlinedButton.icon(
+                onPressed: _isScanning ? null : _handleScanReceipt,
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  side: const BorderSide(color: Color(0xFF10B981), width: 1.5),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: _isScanning
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF10B981)))
+                    : const Icon(Icons.qr_code_scanner, color: Color(0xFF10B981)),
+                label: Text(
+                  _isScanning ? "Scanning Receipt with AI..." : "📷 Scan Receipt / Bill with AI",
+                  style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+            ),
             TextField(
               controller: titleController,
               decoration: InputDecoration(

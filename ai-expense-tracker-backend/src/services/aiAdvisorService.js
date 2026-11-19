@@ -33,6 +33,17 @@ const generateSmartAdvice = (data) => {
         return `Namaste! 🙏 Main FinWise AI Assistant hu. Main aapke real-time income, expenses, aur balance ko analyze karke smart money saving tips aur purchase guidance deta hu!`;
     }
 
+    // Predict / Forecast Next Month Expenses
+    if (q.includes("predict") || q.includes("forecast") || q.includes("next month") || q.includes("agle mahine") || q.includes("agle month")) {
+        const predictedTotal = Math.round(totalExpense * 1.04);
+        const predictedSavings = Math.max(0, Math.round(totalIncome - predictedTotal));
+        const topCatEntry = Object.entries(categoryExpenses || {}).sort((a, b) => b[1] - a[1])[0];
+        const topCatName = topCatEntry ? topCatEntry[0] : "General";
+        const topCatVal = topCatEntry ? Math.round(topCatEntry[1] * 1.04) : 0;
+
+        return `🔮 FinWise AI Forecast for Next Month:\n\n- Projected Total Expense: ₹${predictedTotal} (incl. 4% inflation adjustment)\n- Projected Savings: ₹${predictedSavings}\n- Primary Cost Driver: ${topCatName} (₹${topCatVal})\n\nRecommendation: Capping ${topCatName} spending at ₹${Math.round(topCatVal * 0.85)} next month will save you an extra ₹${Math.round(topCatVal * 0.15)}!`;
+    }
+
     // Number extraction helper
     const amountMatch = String(question).match(/\b\d+\b/);
     const itemAmount = amountMatch ? parseInt(amountMatch[0], 10) : null;
