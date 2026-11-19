@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -98,8 +99,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             maxHeight: 1024,
             imageQuality: 80,
           );
+        } on PlatformException catch (pe) {
+          debugPrint("PlatformException picking image: ${pe.message}");
+          // Fallback to Gallery pick if Camera Platform Exception happens
+          image = await picker.pickImage(
+            source: ImageSource.gallery,
+            maxWidth: 1024,
+            maxHeight: 1024,
+            imageQuality: 80,
+          );
         } catch (e) {
-          // Camera permission fallback to gallery
           image = await picker.pickImage(
             source: ImageSource.gallery,
             maxWidth: 1024,
